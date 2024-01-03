@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.green.greengream4.dm.DmMapper">
+    <!--//////////////////////////////////   t_dm -->
+    <insert id="insDm" useGeneratedKeys="true" keyProperty="idm">
+        INSERT INTO t_dm
+        SET last_msg = NULL
+    </insert>
+
+    <select id="selDmAll">
+        SELECT
+        A.idm, A.last_msg AS lastMsg, A.last_msg_at AS lastMsgAt
+        , D.iuser AS OtherPersonIuser, D.nm AS otherPersonNm, D.pic AS otherPersonPic
+        FROM t_dm A
+        INNER JOIN t_dm_user B
+        ON A.idm = B.idm
+        INNER JOIN t_dm_user C
+        ON B.idm = C.idm
+        INNER JOIN t_user D
+        ON C.iuser = D.iuser
+        WHERE B.iuser = #{loginedIuser}
+        AND C.iuser != #{loginedIuser}
+        ORDER BY A.last_msg_at DESC
+        LIMIT #{startIdx}, #{rowCount}
+    </select>
+
+    <select id="selOtherPersonByLoginUser">
+        SELECT B.iuser, B.pic, B.firebase_token AS firebaseToken
+        FROM t_dm_user A
+        INNER JOIN t_user B6
+        ON A.iuser = B.iuser
+        WHERE A.idm = #{idm}
+        AND A.iuser != #{loginedIuser}
+    </select>
+
+    <update id="updDmLastMsg">
+        UPDATE t_dm
+        SET last_msg = #{msg}
+        WHERE idm = #{idm}
+    </update>
+
+    <update id="updDmLastMsgAfterDelByLastMsg">
+        UPDATE t_dm A
+        INNER JOIN (
+        SELECT idm, msg, created_at
+        FROM t_dm_msg
+        WHERE idm = #{idm}
+        ORDER BY seq DESC
+        LIMIT 1
+        ) B
+        ON A.idm = B.idm
+        SET A.last_msg = B.msg
+        , A.last_msg_at = B.created_at
+        WHERE A.idm = #{idm}
+    </update>
+
+
+    <!-- //////////////////////// t_dm -->
+<!--    <insert id="insDm" useGeneratedKeys="true" keyProperty="idm">-->
+<!--        insert into t_dm (last_msg) values (null)-->
+
+<!--    </insert>-->
+
+<!--    <insert id="insDm">-->
+<!--        insert into t_feed(iuser, contents, location) values(2, 'ddd', 'a')-->
+<!--    </insert>-->
+
+
+    <!-- //////////////////////////////// t_dm_user-->
+    <insert id="insDmUser">
+        insert into t_dm_user
+        set idm = #{idm}
+        , iuser = #{iuser}
+    </insert>
+
+
+    <select id="selDmUserCheck">
+        SELECT idm
+        FROM t_dm_user
+        WHERE iuser = #{loginedIuser}
+        OR iuser = #{otherPersonIuser}
+        GROUP BY idm
+        HAVING COUNT(idm) = 2
+    </select>
+
+
+    <!-- //////////////////////////////// t_dm_msg-->
+    <insert id="insDmMsg">
+        <!--오토인크리즈 없는 애는 먼저 셀렉해서 정보받아와서 인설트한다 -->
+        <selectKey resultType="int" keyProperty="seq" order="BEFORE">
+            SELECT IFNULL(MAX(seq), 0) + 1
+            FROM t_dm_msg
+            WHERE idm = #{idm}
+        </selectKey>
+        INSERT INTO t_dm_msg
+        SET idm = #{idm}
+        , seq = #{seq}
+        , iuser = #{loginedIuser}
+        , msg = #{msg}
+    </insert>
+<!--  리스트일떈 무조건 pk를줘야함 그래야 식별가능 pk레코드를 대표하는값 지금은 글삭제를 할떄 필요
+이거할떄 삭제 기능이 필요없으면 seq안줘도됨 잘모르겠으면 리스트쓸때 그냥 pk값 보내라-->
+    <select id="selDmMsgAll">
+        SELECT
+        A.seq, A.msg, A.created_at AS createdAt
+        , B.iuser AS writerIuser, B.pic AS writerPic
+        FROM t_dm_msg A
+        INNER JOIN t_user B
+        ON A.iuser = B.iuser
+        WHERE A.idm = #{idm}
+        ORDER BY A.seq DESC
+        LIMIT #{startIdx}, #{rowCount}
+    </select>
+
+    <update id="udpDmLastMsgAfterDelByLastMsg">
+        update t_dm A
+        join(
+        select idm, msg, created_at
+        from t_dm_msg
+        wwhere idm = #{idm}
+        order by seq desc
+        limit 1
+        ) B
+        ON A.idm =B.msg
+        , A.last_msg_at = B.created_at
+        where A.idm = #{idm}
+    </update>
+
+
+    <delete id="delMsg">
+        delete
+        from t_dm_msg
+        where idm = #{idm} and iuser =#{iuser} and seq = #{seq}
+    </delete>
+</mapper>

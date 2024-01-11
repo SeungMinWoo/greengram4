@@ -10,4 +10,7 @@ public class UserSigninVo {
     private int iuser;
     private String nm;
     private String pic;
+    private String firebaseToken;
+    // 에세스 토큰만들어서 프론트에 알려주기위해
+    private String accessToken;
 }

@@ -3,6 +3,7 @@ package com.green.greengream4.feed;
 import com.green.greengream4.common.Const;
 import com.green.greengream4.common.ResVo;
 import com.green.greengream4.feed.model.*;
+import com.green.greengream4.security.AuthenticationFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,8 +18,12 @@ public class FeedService {
     private final FeedPicsMapper picsMapper;
     private final FeedFavMapper favMapper;
     private final FeedCommentMapper commentMapper;
+    private final AuthenticationFacade authenticationFacade;
 
     public ResVo postFeed(FeedInsDto dto) {
+
+
+        dto.setIuser(authenticationFacade.getLoginUserPk());
         int feedAffectedRows = mapper.insFeed(dto);
         int feedPicsAffectedRows = picsMapper.insFeedPics(dto);
         return new ResVo(dto.getIfeed());

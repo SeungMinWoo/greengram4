@@ -10,6 +10,7 @@ public class FeedInsDto {
     @JsonIgnore
     //@Schema(hidden = true)
     private int ifeed;
+    @JsonIgnore
     private int iuser;
     private String contents;
     private String location;
